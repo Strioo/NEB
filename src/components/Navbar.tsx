@@ -1,0 +1,125 @@
+import { Component, createSignal, Show } from 'solid-js';
+import { A, useLocation } from '@solidjs/router';
+import Container from './Container';
+import Button from './Button';
+import LanguageDropdown from './LanguageDropdown';
+import { useI18n } from '../i18n';
+
+const Navbar: Component = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
+  const location = useLocation();
+  const { t } = useI18n();
+
+  const navLinks = () => [
+    { href: '/', label: t().nav.home },
+    { href: '/services', label: t().nav.services },
+    { href: '/tutorial', label: t().nav.tutorial },
+    { href: '/contact', label: t().nav.contact },
+  ];
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(href);
+  };
+
+  return (
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+      <Container>
+        <div class="flex items-center justify-between h-16">
+          {/* Brand */}
+          <A href="/" class="text-xl font-bold text-gray-900 tracking-tight">
+            NEB
+          </A>
+
+          {/* Desktop Navigation */}
+          <div class="hidden md:flex items-center gap-1">
+            {navLinks().map((link) => (
+              <A 
+                href={link.href} 
+                class={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                  isActive(link.href) 
+                    ? 'text-gray-900 bg-gray-100' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                {link.label}
+              </A>
+            ))}
+          </div>
+
+          {/* Desktop CTA + Language Switcher */}
+          <div class="hidden md:flex items-center gap-3">
+            {/* Language Dropdown */}
+            <LanguageDropdown />
+            
+            <A href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+              {t().nav.login}
+            </A>
+            <Button href="/services" variant="accent" class="!py-2 !px-4 text-sm">
+              {t().nav.startFree}
+            </Button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button 
+            type="button"
+            class="md:hidden p-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen())}
+            aria-expanded={mobileMenuOpen()}
+            aria-label="Toggle menu"
+          >
+            <Show 
+              when={!mobileMenuOpen()} 
+              fallback={
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              }
+            >
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </Show>
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        <Show when={mobileMenuOpen()}>
+          <div class="md:hidden py-4 border-t border-gray-100">
+            <div class="flex flex-col gap-1">
+              {navLinks().map((link) => (
+                <A 
+                  href={link.href} 
+                  class={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                    isActive(link.href) 
+                      ? 'bg-gray-100 text-gray-900' 
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </A>
+              ))}
+              <div class="pt-4 px-4 flex flex-col gap-2 border-t border-gray-100">
+                {/* Mobile Language Dropdown */}
+                <div class="mb-2">
+                  <LanguageDropdown />
+                </div>
+                <A href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 py-2 text-center">
+                  {t().nav.login}
+                </A>
+                <Button href="/services" variant="accent" class="w-full">
+                  {t().nav.startFree}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Show>
+      </Container>
+    </nav>
+  );
+};
+
+export default Navbar;
