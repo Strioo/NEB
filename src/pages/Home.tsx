@@ -1,33 +1,54 @@
-import { Component } from 'solid-js';
+import { Component, createSignal, onMount, For, Show } from 'solid-js';
 import { Container, Button, Accordion } from '../components';
 import { useI18n } from '../i18n';
 
+interface FaqItem {
+  q: string;
+  a: string;
+}
+
+interface FaqApiResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: FaqItem[];
+}
+
 const Home: Component = () => {
   const { t } = useI18n();
+  const [faqs, setFaqs] = createSignal<FaqItem[]>([]);
+  const [isLoadingFaq, setIsLoadingFaq] = createSignal(true);
+  const [faqError, setFaqError] = createSignal('');
 
-  // Dynamic FAQ data based on language
-  const getFaqData = () => [
-    {
-      id: 'about',
-      question: t().faqData.aboutQ,
-      answer: t().faqData.aboutA,
-    },
-    {
-      id: 'payment',
-      question: t().faqData.paymentQ,
-      answer: t().faqData.paymentA,
-    },
-    {
-      id: 'simplify',
-      question: t().faqData.simplifyQ,
-      answer: t().faqData.simplifyA,
-    },
-    {
-      id: 'security',
-      question: t().faqData.securityQ,
-      answer: t().faqData.securityA,
-    },
-  ];
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+  // Fetch FAQ from API
+  onMount(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/faq`);
+      const result: FaqApiResponse = await response.json();
+      
+      if (result.code === 200 && result.data) {
+        setFaqs(result.data);
+      } else {
+        setFaqError(result.message || 'Failed to fetch FAQs');
+      }
+    } catch (err) {
+      console.error('Error fetching FAQs:', err);
+      setFaqError('Failed to load FAQs');
+    } finally {
+      setIsLoadingFaq(false);
+    }
+  });
+
+  // Transform API data to Accordion format
+  const getFaqData = () => {
+    return faqs().map((faq, index) => ({
+      id: `faq-${index}`,
+      question: faq.q,
+      answer: faq.a,
+    }));
+  };
 
   return (
     <div>
@@ -122,7 +143,7 @@ const Home: Component = () => {
                 {t().mainService.description}
               </p>
 
-              {/* Features List */}
+              {/* Simple Gimmick - Just Upload */}
               <div class="space-y-4 mb-8">
                 <div class="flex items-start gap-3">
                   <div class="w-6 h-6 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -131,8 +152,8 @@ const Home: Component = () => {
                     </svg>
                   </div>
                   <div>
-                    <h4 class="font-semibold text-gray-900 mb-1">{t().mainService.feature1}</h4>
-                    <p class="text-gray-500 text-sm">{t().mainService.feature1Desc}</p>
+                    <h4 class="font-semibold text-gray-900 mb-1">Upload File Config</h4>
+                    <p class="text-gray-500 text-sm">Upload file .seb config Anda ke sistem</p>
                   </div>
                 </div>
                 <div class="flex items-start gap-3">
@@ -142,8 +163,8 @@ const Home: Component = () => {
                     </svg>
                   </div>
                   <div>
-                    <h4 class="font-semibold text-gray-900 mb-1">{t().mainService.feature2}</h4>
-                    <p class="text-gray-500 text-sm">{t().mainService.feature2Desc}</p>
+                    <h4 class="font-semibold text-gray-900 mb-1">Langsung Jadi!</h4>
+                    <p class="text-gray-500 text-sm">Sistem otomatis memproses dan memberikan akses bypass</p>
                   </div>
                 </div>
                 <div class="flex items-start gap-3">
@@ -153,8 +174,8 @@ const Home: Component = () => {
                     </svg>
                   </div>
                   <div>
-                    <h4 class="font-semibold text-gray-900 mb-1">{t().mainService.feature3}</h4>
-                    <p class="text-gray-500 text-sm">{t().mainService.feature3Desc}</p>
+                    <h4 class="font-semibold text-gray-900 mb-1">Kerjakan Ujian Bebas</h4>
+                    <p class="text-gray-500 text-sm">Copy-paste, screenshot, akses tab lain tanpa batasan</p>
                   </div>
                 </div>
               </div>
@@ -197,46 +218,59 @@ const Home: Component = () => {
                   </div>
                 </div>
 
-                {/* Card Body - Process Steps */}
+                {/* Card Body - Simple Gimmick Visual */}
                 <div class="p-6 bg-white">
                   <div class="space-y-4">
-                    {/* Step 1 */}
-                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                      <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    {/* Upload Step */}
+                    <div class="text-center py-8">
+                      <div class="w-20 h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
-                      <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">{t().mainService.step1}</p>
-                        <p class="text-xs text-gray-500">{t().mainService.step1Desc}</p>
+                      <h3 class="text-lg font-bold text-gray-900 mb-2">Upload Config File</h3>
+                      <p class="text-sm text-gray-500 mb-4">Drop file .seb Anda di sini</p>
+                      
+                      <div class="inline-block px-4 py-2 bg-gray-100 rounded-lg text-xs text-gray-600 font-mono">
+                        exam-config.seb
                       </div>
                     </div>
 
-                    {/* Step 2 */}
-                    <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl">
-                      <div class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-primary-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                      </div>
-                      <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">{t().mainService.step2}</p>
-                        <p class="text-xs text-gray-500">{t().mainService.step2Desc}</p>
+                    {/* Processing Animation */}
+                    <div class="flex justify-center">
+                      <div class="flex gap-1">
+                        <div class="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                        <div class="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                        <div class="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
                       </div>
                     </div>
 
-                    {/* Step 3 */}
-                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl opacity-50">
-                      <div class="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    {/* Result */}
+                    <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg">
+                      <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">{t().mainService.step3}</p>
-                        <p class="text-xs text-gray-500">{t().mainService.step3Desc}</p>
+                        <p class="text-base font-bold text-white">Siap Digunakan! 🎉</p>
+                        <p class="text-sm text-white/90">Akses bypass sudah aktif</p>
+                      </div>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
+                      <div class="text-center">
+                        <p class="text-xs text-gray-500">Waktu</p>
+                        <p class="text-sm font-bold text-gray-900">2 detik</p>
+                      </div>
+                      <div class="text-center">
+                        <p class="text-xs text-gray-500">Status</p>
+                        <p class="text-sm font-bold text-green-600">Aktif</p>
+                      </div>
+                      <div class="text-center">
+                        <p class="text-xs text-gray-500">Akses</p>
+                        <p class="text-sm font-bold text-gray-900">Penuh</p>
                       </div>
                     </div>
                   </div>
@@ -288,7 +322,27 @@ const Home: Component = () => {
               </p>
             </div>
             
-            <Accordion items={getFaqData()} defaultOpen="about" />
+            {/* Loading State */}
+            <Show when={isLoadingFaq()}>
+              <div class="flex items-center justify-center py-12">
+                <svg class="animate-spin w-8 h-8 text-primary-500" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              </div>
+            </Show>
+
+            {/* Error State */}
+            <Show when={faqError()}>
+              <div class="p-4 bg-red-50 border border-red-200 rounded-xl text-center">
+                <p class="text-red-700">{faqError()}</p>
+              </div>
+            </Show>
+
+            {/* FAQ Content */}
+            <Show when={!isLoadingFaq() && !faqError() && faqs().length > 0}>
+              <Accordion items={getFaqData()} defaultOpen="faq-0" />
+            </Show>
           </div>
         </Container>
       </section>

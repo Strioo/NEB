@@ -129,7 +129,7 @@ const Services: Component = () => {
 
   return (
     <div>
-      {/* Hero Section - All Services */}
+      {/* Hero Section - All Services Overview */}
       <section class="py-20 sm:py-24 bg-gradient-to-br from-gray-50 via-white to-primary-50/30">
         <Container>
           <div class="max-w-4xl mx-auto text-center mb-16">
@@ -142,7 +142,7 @@ const Services: Component = () => {
             </p>
           </div>
 
-          {/* Services Grid */}
+          {/* Services Grid - 3 Cards Equal Showcase */}
           <div class="max-w-5xl mx-auto">
             <Show when={isLoading()}>
               <div class="flex items-center justify-center py-12">
@@ -165,7 +165,7 @@ const Services: Component = () => {
                   {(service) => {
                     const colors = getServiceColor(service.slug);
                     return (
-                      <div class={`feature-card card-base overflow-hidden border-2 ${colors.border} ${service.enabled ? 'shadow-lg' : 'opacity-75'}`}>
+                      <div class={`feature-card card-base overflow-hidden border-2 ${colors.border} ${service.enabled ? 'shadow-lg hover:shadow-xl' : 'opacity-75'} transition-all`}>
                         {/* Service Header */}
                         <div class={`${colors.bg} px-6 py-8 text-center`}>
                           <div class={`w-16 h-16 ${colors.bg} rounded-2xl flex items-center justify-center mx-auto mb-4 ${colors.text}`}>
@@ -181,32 +181,45 @@ const Services: Component = () => {
 
                         {/* Service Body */}
                         <div class="p-6">
-                          <Show when={service.enabled && service.description.seamless}>
-                            <div class="space-y-3 mb-6">
-                              <div class="flex items-start gap-2">
-                                <svg class="w-5 h-5 text-primary-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <p class="text-sm text-gray-600">{service.description.seamless}</p>
+                          {/* Dynamic description rendering - shows all available descriptions */}
+                          <div class="space-y-3 mb-6">
+                            {/* Default description */}
+                            <Show when={service.description?.default}>
+                              <p class="text-sm text-gray-700 leading-relaxed font-medium">
+                                {service.description.default}
+                              </p>
+                            </Show>
+
+                            {/* Additional descriptions with checkmarks */}
+                            <Show when={service.description?.seamless || service.description?.supported || service.description?.instant}>
+                              <div class="space-y-2 pt-3 border-t border-gray-100">
+                                <Show when={service.description?.seamless}>
+                                  <div class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <p class="text-xs text-gray-600 leading-relaxed">{service.description.seamless}</p>
+                                  </div>
+                                </Show>
+                                <Show when={service.description?.supported}>
+                                  <div class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <p class="text-xs text-gray-600 leading-relaxed">{service.description.supported}</p>
+                                  </div>
+                                </Show>
+                                <Show when={service.description?.instant}>
+                                  <div class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <p class="text-xs text-gray-600 leading-relaxed">{service.description.instant}</p>
+                                  </div>
+                                </Show>
                               </div>
-                              <div class="flex items-start gap-2">
-                                <svg class="w-5 h-5 text-primary-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <p class="text-sm text-gray-600">{service.description.supported}</p>
-                              </div>
-                              <div class="flex items-start gap-2">
-                                <svg class="w-5 h-5 text-primary-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <p class="text-sm text-gray-600">{service.description.instant}</p>
-                              </div>
-                            </div>
-                          </Show>
-                          
-                          <Show when={!service.enabled}>
-                            <p class="text-sm text-gray-500 mb-6">{service.description.default}</p>
-                          </Show>
+                            </Show>
+                          </div>
 
                           <Show when={service.enabled} fallback={
                             <button disabled class="w-full px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
@@ -231,7 +244,7 @@ const Services: Component = () => {
         </Container>
       </section>
 
-      {/* Safe Exam Bypasser - Main Focus Section */}
+      {/* Safe Exam Bypasser - Featured Service Section */}
       <section class="py-20 bg-white">
         <Container>
           <div class="max-w-5xl mx-auto">
@@ -248,52 +261,32 @@ const Services: Component = () => {
               </p>
             </div>
 
-            <div class="feature-card card-base overflow-hidden shadow-xl">
-              {/* Header */}
-              <div class="bg-gradient-to-r from-primary-600 to-primary-500 px-8 py-6">
-                <div class="flex items-center justify-between flex-wrap gap-4">
-                  <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
-                      <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                      </svg>
+            {/* Features Grid - Focus on Benefits */}
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+              <For each={sebFeatures()}>
+                {(feature) => (
+                  <div class="feature-card card-base p-6 text-center hover:shadow-lg transition-shadow">
+                    <div class="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center text-primary-600 mx-auto mb-4">
+                      {feature.icon}
                     </div>
-                    <div>
-                      <h2 class="text-2xl font-bold text-white">Safe Exam Browser Bypass</h2>
-                      <p class="text-white/80 text-sm">{t().services.sebTagline}</p>
-                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">{feature.description}</p>
                   </div>
-                  <Badge text={t().services.mainBadge} variant="accent" class="!bg-white !text-primary-600" />
-                </div>
-              </div>
-              
-              {/* Content */}
-              <div class="p-8">                
-                {/* Features Grid */}
-                <div class="grid md:grid-cols-3 gap-6 mb-8">
-                  <For each={sebFeatures()}>
-                    {(feature) => (
-                      <div class="p-4 rounded-xl bg-gray-50 border border-gray-100 hover:border-primary-200 transition-colors">
-                        <div class="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center text-primary-600 mb-3">
-                          {feature.icon}
-                        </div>
-                        <h3 class="font-semibold text-gray-900 mb-1">{feature.title}</h3>
-                        <p class="text-gray-500 text-sm">{feature.description}</p>
-                      </div>
-                    )}
-                  </For>
-                </div>
+                )}
+              </For>
+            </div>
 
-                {/* CTA Button */}
-                <div class="text-center">
-                  <Button href="/upload" variant="accent" class="!px-8 !py-4">
-                    {t().services.ctaUpload}
-                    <svg class="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                  </Button>
-                </div>
-              </div>
+            {/* CTA Section */}
+            <div class="text-center mt-12">
+              <Button href="/upload" variant="accent" class="!px-10 !py-5 !text-lg">
+                {t().services.ctaUpload}
+                <svg class="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </Button>
+              <p class="text-sm text-gray-500 mt-4">
+                Upload file config dan dapatkan akses bypass instan
+              </p>
             </div>
           </div>
         </Container>
