@@ -1,11 +1,10 @@
 import { Component } from 'solid-js';
 import { A } from '@solidjs/router';
 import Container from './Container';
-import { useI18n } from '../i18n';
+import { text } from '../constants/text';
 
 const Footer: Component = () => {
   const currentYear = new Date().getFullYear();
-  const { t } = useI18n();
 
   return (
     <footer class="bg-white border-t border-gray-100 py-12">
@@ -17,22 +16,22 @@ const Footer: Component = () => {
               NEB
             </A>
             <p class="mt-3 text-sm text-gray-500 leading-relaxed">
-              {t().footer.tagline}
+              {text.footer.tagline}
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">{t().footer.product}</h4>
+            <h4 class="text-sm font-semibold text-gray-900 mb-4">{text.footer.product}</h4>
             <ul class="space-y-3">
               <li>
                 <A href="/services" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  {t().nav.services}
+                  {text.nav.services}
                 </A>
               </li>
               <li>
                 <A href="/tutorial" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  {t().nav.tutorial}
+                  {text.nav.tutorial}
                 </A>
               </li>
               <li>
@@ -44,28 +43,28 @@ const Footer: Component = () => {
           </div>
 
           <div>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">{t().footer.company}</h4>
+            <h4 class="text-sm font-semibold text-gray-900 mb-4">{text.footer.company}</h4>
             <ul class="space-y-3">
               <li>
                 <A href="/contact" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  {t().nav.contact}
+                  {text.nav.contact}
                 </A>
               </li>
               <li>
                 <a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  {t().footer.privacy}
+                  {text.footer.privacy}
                 </a>
               </li>
               <li>
                 <a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  {t().footer.terms}
+                  {text.footer.terms}
                 </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 class="text-sm font-semibold text-gray-900 mb-4">{t().footer.connect}</h4>
+            <h4 class="text-sm font-semibold text-gray-900 mb-4">{text.footer.connect}</h4>
             <ul class="space-y-3">
               <li>
                 <a href="#" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
@@ -89,7 +88,7 @@ const Footer: Component = () => {
         {/* Copyright */}
         <div class="mt-12 pt-8 border-t border-gray-100">
           <p class="text-sm text-gray-400 text-center">
-            © {currentYear} NEB. {t().footer.copyright}
+            © {currentYear} NEB. {text.footer.copyright}
           </p>
         </div>
       </Container>

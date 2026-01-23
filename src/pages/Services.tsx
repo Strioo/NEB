@@ -1,6 +1,8 @@
 import { Component, createSignal, onMount, For, Show } from 'solid-js';
 import { Container, Badge, Button } from '../components';
-import { useI18n } from '../i18n';
+import { text } from '../constants/text';
+import { API_ENDPOINTS, logger } from '../config/api.config';
+import { get, ApiError } from '../utils/http';
 
 interface ServiceData {
   enabled: boolean;
@@ -22,18 +24,17 @@ interface ApiResponse {
 }
 
 const Services: Component = () => {
-  const { t } = useI18n();
   const [services, setServices] = createSignal<ServiceData[]>([]);
   const [isLoading, setIsLoading] = createSignal(true);
   const [error, setError] = createSignal('');
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-  // Fetch services from API
+  // Fetch services from API with retry logic
   onMount(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/service`);
-      const result: ApiResponse = await response.json();
+      const result = await get<ApiResponse>(
+        `${API_ENDPOINTS.BASE_URL}${API_ENDPOINTS.SERVICES}`,
+        { retries: 2, retryDelay: 1000 }
+      );
       
       if (result.code === 200 && result.data) {
         setServices(result.data);
@@ -41,8 +42,12 @@ const Services: Component = () => {
         setError(result.message || 'Failed to fetch services');
       }
     } catch (err) {
-      console.error('Error fetching services:', err);
-      setError('Failed to load services');
+      logger.error('Error fetching services:', err);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Failed to load services. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +91,8 @@ const Services: Component = () => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       ),
-      title: t().services.feature1Title,
-      description: t().services.feature1Desc,
+      title: text.services.feature1Title,
+      description: text.services.feature1Desc,
     },
     {
       icon: (
@@ -95,8 +100,8 @@ const Services: Component = () => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       ),
-      title: t().services.feature2Title,
-      description: t().services.feature2Desc,
+      title: text.services.feature2Title,
+      description: text.services.feature2Desc,
     },
     {
       icon: (
@@ -104,41 +109,42 @@ const Services: Component = () => {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
-      title: t().services.feature3Title,
-      description: t().services.feature3Desc,
+      title: text.services.feature3Title,
+      description: text.services.feature3Desc,
     },
   ];
 
   const howItWorks = () => [
     {
       step: '01',
-      title: t().services.step1Title,
-      description: t().services.step1Desc,
+      title: text.services.step1Title,
+      description: text.services.step1Desc,
     },
     {
       step: '02',
-      title: t().services.step2Title,
-      description: t().services.step2Desc,
+      title: text.services.step2Title,
+      description: text.services.step2Desc,
     },
     {
       step: '03',
-      title: t().services.step3Title,
-      description: t().services.step3Desc,
+      title: text.services.step3Title,
+      description: text.services.step3Desc,
     },
   ];
 
   return (
     <div>
-      {/* Hero Section - All Services Overview */}
+      {/* Hero Section - Nach Exam Bypasser Overview */}
       <section class="py-20 sm:py-24 bg-gradient-to-br from-gray-50 via-white to-primary-50/30">
         <Container>
           <div class="max-w-4xl mx-auto text-center mb-16">
-            <Badge text={t().services.badge} variant="accent" class="mb-4" />
+            <Badge text="Nach Exam Bypasser" variant="accent" class="mb-4" />
             <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
-              {t().services.title}
+              3 Layanan Exam Bypasser
             </h1>
-            <p class="text-xl text-gray-500">
-              {t().services.subtitle}
+            <p class="text-xl text-gray-500 leading-relaxed">
+              Nach Exam Bypasser (NEB) menyediakan 3 layanan exam bypasser yang memudahkan Anda mengakses ujian online tanpa batasan. 
+              Upload config, dapatkan akses, dan kerjakan ujian dengan bebas.
             </p>
           </div>
 
@@ -257,7 +263,7 @@ const Services: Component = () => {
                 Safe Exam Browser Bypass
               </h2>
               <p class="text-lg text-gray-500 max-w-2xl mx-auto">
-                {t().services.sebDescription}
+                {text.services.sebDescription}
               </p>
             </div>
 
@@ -279,7 +285,7 @@ const Services: Component = () => {
             {/* CTA Section */}
             <div class="text-center mt-12">
               <Button href="/upload" variant="accent" class="!px-10 !py-5 !text-lg">
-                {t().services.ctaUpload}
+                {text.services.ctaUpload}
                 <svg class="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                 </svg>
@@ -287,70 +293,6 @@ const Services: Component = () => {
               <p class="text-sm text-gray-500 mt-4">
                 Upload file config dan dapatkan akses bypass instan
               </p>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* How It Works Section */}
-      <section class="py-20 bg-gray-50">
-        <Container>
-          <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">
-              {t().services.howItWorksTitle}
-            </h2>
-            <p class="text-lg text-gray-500 max-w-2xl mx-auto">
-              {t().services.howItWorksSubtitle}
-            </p>
-          </div>
-          
-          <div class="max-w-4xl mx-auto">
-            <div class="grid md:grid-cols-3 gap-8">
-              <For each={howItWorks()}>
-                {(item, index) => (
-                  <div class="relative">
-                    {/* Connector Line */}
-                    <Show when={index() < 2}>
-                      <div class="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-primary-300 to-transparent z-0" />
-                    </Show>
-                    
-                    <div class="feature-card card-base p-6 text-center relative z-10">
-                      <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-2xl font-bold text-primary-600">{item.step}</span>
-                      </div>
-                      <h3 class="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
-                      <p class="text-gray-500 text-sm">{item.description}</p>
-                    </div>
-                  </div>
-                )}
-              </For>
-            </div>
-          </div>
-        </Container>
-      </section>
-
-      {/* CTA Section */}
-      <section class="py-20">
-        <Container>
-          <div class="max-w-3xl mx-auto">
-            <div class="bg-gradient-to-r from-primary-600 to-primary-500 rounded-3xl p-8 md:p-12 text-center">
-              <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
-                {t().services.ctaTitle}
-              </h2>
-              <p class="text-lg text-white/80 mb-8 max-w-xl mx-auto">
-                {t().services.ctaSubtitle}
-              </p>
-              <div class="flex flex-wrap gap-4 justify-center">
-                <Button href="/upload" class="!bg-white !text-primary-600 hover:!bg-gray-100">
-                  {t().services.ctaUpload}
-                  <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                </Button>
-                <Button href="/tutorial" variant="outline" class="!border-white/30 !text-white hover:!bg-white/10">
-                  {t().services.helpCta}
-                </Button>
-              </div>
             </div>
           </div>
         </Container>

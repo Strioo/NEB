@@ -1,6 +1,8 @@
 import { Component, createSignal, onMount, For, Show } from 'solid-js';
 import { Container, Button, Accordion } from '../components';
-import { useI18n } from '../i18n';
+import { text } from '../constants/text';
+import { API_ENDPOINTS, logger } from '../config/api.config';
+import { get, ApiError } from '../utils/http';
 
 interface FaqItem {
   q: string;
@@ -15,18 +17,17 @@ interface FaqApiResponse {
 }
 
 const Home: Component = () => {
-  const { t } = useI18n();
   const [faqs, setFaqs] = createSignal<FaqItem[]>([]);
   const [isLoadingFaq, setIsLoadingFaq] = createSignal(true);
   const [faqError, setFaqError] = createSignal('');
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-  // Fetch FAQ from API
+  // Fetch FAQ from API with proper error handling
   onMount(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/faq`);
-      const result: FaqApiResponse = await response.json();
+      const result = await get<FaqApiResponse>(
+        `${API_ENDPOINTS.BASE_URL}${API_ENDPOINTS.FAQ}`,
+        { retries: 2, retryDelay: 1000 }
+      );
       
       if (result.code === 200 && result.data) {
         setFaqs(result.data);
@@ -34,8 +35,12 @@ const Home: Component = () => {
         setFaqError(result.message || 'Failed to fetch FAQs');
       }
     } catch (err) {
-      console.error('Error fetching FAQs:', err);
-      setFaqError('Failed to load FAQs');
+      logger.error('Error fetching FAQs:', err);
+      if (err instanceof ApiError) {
+        setFaqError(err.message);
+      } else {
+        setFaqError('Failed to load FAQs. Please try again later.');
+      }
     } finally {
       setIsLoadingFaq(false);
     }
@@ -67,35 +72,35 @@ const Home: Component = () => {
             <div class="mb-8 inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
               <span class="w-2 h-2 bg-primary-500 rounded-full"></span>
               <span class="text-xs font-semibold text-primary-600 uppercase tracking-wider">
-                {t().hero.badge}
+                {text.hero.badge}
               </span>
-              <span class="text-sm text-gray-600">{t().hero.badgeText}</span>
+              <span class="text-sm text-gray-600">{text.hero.badgeText}</span>
             </div>
 
             {/* Main Headline */}
             <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-              {t().hero.title1}
+              {text.hero.title1}
               <br />
               <span class="text-primary-600">
-                {t().hero.title2}
+                {text.hero.title2}
               </span>
             </h1>
 
             {/* Subtitle */}
             <p class="text-xl text-gray-600 mb-10 leading-relaxed">
-              {t().hero.subtitle}
+              {text.hero.subtitle}
             </p>
 
             {/* CTA Buttons */}
             <div class="flex flex-wrap gap-4 justify-center mb-12">
               <Button href="/services" class="!bg-primary-600 hover:!bg-primary-700 !shadow-lg hover:!shadow-xl !transition-all">
-                {t().hero.ctaPrimary}
+                {text.hero.ctaPrimary}
                 <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Button>
               <Button href="/tutorial" variant="outline" class="!bg-white !border-gray-300 !text-gray-700 hover:!bg-gray-50 !shadow-sm hover:!shadow !transition-all">
-                {t().hero.ctaSecondary}
+                {text.hero.ctaSecondary}
               </Button>
             </div>
 
@@ -133,17 +138,17 @@ const Home: Component = () => {
               <div class="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full mb-6">
                 <span class="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></span>
                 <span class="text-xs font-semibold text-primary-600 uppercase tracking-wider">
-                  {t().mainService.label}
+                  {text.mainService.label}
                 </span>
               </div>
               <h2 class="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                {t().mainService.title}
+                {text.mainService.title}
               </h2>
               <p class="text-xl text-gray-600 mb-8 leading-relaxed">
-                {t().mainService.description}
+                {text.mainService.description}
               </p>
 
-              {/* Simple Gimmick - Just Upload */}
+              {/* Simple Features - No Gimmick */}
               <div class="space-y-4 mb-8">
                 <div class="flex items-start gap-3">
                   <div class="w-6 h-6 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -163,8 +168,8 @@ const Home: Component = () => {
                     </svg>
                   </div>
                   <div>
-                    <h4 class="font-semibold text-gray-900 mb-1">Langsung Jadi!</h4>
-                    <p class="text-gray-500 text-sm">Sistem otomatis memproses dan memberikan akses bypass</p>
+                    <h4 class="font-semibold text-gray-900 mb-1">Dapatkan Akses Bypass</h4>
+                    <p class="text-gray-500 text-sm">Sistem memproses dan memberikan header bypass instan</p>
                   </div>
                 </div>
                 <div class="flex items-start gap-3">
@@ -175,20 +180,20 @@ const Home: Component = () => {
                   </div>
                   <div>
                     <h4 class="font-semibold text-gray-900 mb-1">Kerjakan Ujian Bebas</h4>
-                    <p class="text-gray-500 text-sm">Copy-paste, screenshot, akses tab lain tanpa batasan</p>
+                    <p class="text-gray-500 text-sm">Gunakan header untuk akses penuh tanpa batasan</p>
                   </div>
                 </div>
               </div>
 
               <div class="flex flex-wrap gap-4">
                 <Button href="/upload" variant="accent" class="!shadow-lg hover:!shadow-xl">
-                  {t().mainService.cta}
+                  {text.mainService.cta}
                   <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                 </Button>
                 <Button href="/services" variant="outline">
-                  {t().mainService.learnMore}
+                  {text.mainService.learnMore}
                   <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
@@ -196,82 +201,54 @@ const Home: Component = () => {
               </div>
             </div>
 
-            {/* Right: Visual Demo Card */}
+            {/* Right: Simple Illustration */}
             <div class="relative">
-              {/* Main Card */}
+              {/* Main Illustration Card */}
               <div class="feature-card card-base overflow-hidden shadow-xl">
                 {/* Card Header */}
                 <div class="bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-4">
                   <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
                       <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
                     </div>
                     <div class="flex-1">
                       <h4 class="font-bold text-white text-sm">Safe Exam Browser</h4>
-                      <p class="text-white/80 text-xs">{t().mainService.demoStatus}</p>
+                      <p class="text-white/80 text-xs">Bypass System</p>
                     </div>
-                    <div class="px-2.5 py-1 bg-white/20 rounded-full">
-                      <span class="text-xs font-semibold text-white">BYPASS</span>
+                    <div class="px-2.5 py-1 bg-green-500/20 rounded-full">
+                      <span class="text-xs font-semibold text-white">Active</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Card Body - Simple Gimmick Visual */}
+                {/* Card Body - Simple Benefits */}
                 <div class="p-6 bg-white">
-                  <div class="space-y-4">
-                    {/* Upload Step */}
-                    <div class="text-center py-8">
-                      <div class="w-20 h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-10 h-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </div>
-                      <h3 class="text-lg font-bold text-gray-900 mb-2">Upload Config File</h3>
-                      <p class="text-sm text-gray-500 mb-4">Drop file .seb Anda di sini</p>
-                      
-                      <div class="inline-block px-4 py-2 bg-gray-100 rounded-lg text-xs text-gray-600 font-mono">
-                        exam-config.seb
-                      </div>
+                  <div class="space-y-3">
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span class="text-sm text-gray-700">Full Browser Access</span>
                     </div>
-
-                    {/* Processing Animation */}
-                    <div class="flex justify-center">
-                      <div class="flex gap-1">
-                        <div class="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                        <div class="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                        <div class="w-2 h-2 bg-primary-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
-                      </div>
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span class="text-sm text-gray-700">Copy-Paste Enabled</span>
                     </div>
-
-                    {/* Result */}
-                    <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg">
-                      <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                      <div class="flex-1">
-                        <p class="text-base font-bold text-white">Siap Digunakan! 🎉</p>
-                        <p class="text-sm text-white/90">Akses bypass sudah aktif</p>
-                      </div>
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span class="text-sm text-gray-700">Multi-Tab Support</span>
                     </div>
-
-                    {/* Quick Stats */}
-                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
-                      <div class="text-center">
-                        <p class="text-xs text-gray-500">Waktu</p>
-                        <p class="text-sm font-bold text-gray-900">2 detik</p>
-                      </div>
-                      <div class="text-center">
-                        <p class="text-xs text-gray-500">Status</p>
-                        <p class="text-sm font-bold text-green-600">Aktif</p>
-                      </div>
-                      <div class="text-center">
-                        <p class="text-xs text-gray-500">Akses</p>
-                        <p class="text-sm font-bold text-gray-900">Penuh</p>
-                      </div>
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <svg class="w-5 h-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span class="text-sm text-gray-700">Screenshot Allowed</span>
                     </div>
                   </div>
                 </div>
@@ -290,20 +267,20 @@ const Home: Component = () => {
         <Container>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div class="text-center">
-              <div class="text-3xl font-bold text-gray-900 mb-1">{t().benefits.instant}</div>
-              <div class="text-sm text-gray-500">{t().benefits.instantDesc}</div>
+              <div class="text-3xl font-bold text-gray-900 mb-1">{text.benefits.instant}</div>
+              <div class="text-sm text-gray-500">{text.benefits.instantDesc}</div>
             </div>
             <div class="text-center">
-              <div class="text-3xl font-bold text-gray-900 mb-1">{t().benefits.seamless}</div>
-              <div class="text-sm text-gray-500">{t().benefits.seamlessDesc}</div>
+              <div class="text-3xl font-bold text-gray-900 mb-1">{text.benefits.seamless}</div>
+              <div class="text-sm text-gray-500">{text.benefits.seamlessDesc}</div>
             </div>
             <div class="text-center">
-              <div class="text-3xl font-bold text-gray-900 mb-1">{t().benefits.secure}</div>
-              <div class="text-sm text-gray-500">{t().benefits.secureDesc}</div>
+              <div class="text-3xl font-bold text-gray-900 mb-1">{text.benefits.secure}</div>
+              <div class="text-sm text-gray-500">{text.benefits.secureDesc}</div>
             </div>
             <div class="text-center">
-              <div class="text-3xl font-bold text-gray-900 mb-1">{t().benefits.available}</div>
-              <div class="text-sm text-gray-500">{t().benefits.availableDesc}</div>
+              <div class="text-3xl font-bold text-gray-900 mb-1">{text.benefits.available}</div>
+              <div class="text-sm text-gray-500">{text.benefits.availableDesc}</div>
             </div>
           </div>
         </Container>
@@ -315,10 +292,10 @@ const Home: Component = () => {
           <div class="max-w-3xl mx-auto">
             <div class="text-center mb-12">
               <h2 class="text-4xl font-bold text-gray-900 mb-4">
-                {t().faq.title}
+                {text.faq.title}
               </h2>
               <p class="text-xl text-gray-500">
-                {t().faq.subtitle}
+                {text.faq.subtitle}
               </p>
             </div>
             
@@ -352,20 +329,20 @@ const Home: Component = () => {
         <Container>
           <div class="text-center">
             <h2 class="text-4xl sm:text-5xl font-bold text-white mb-6">
-              {t().cta.title}
+              {text.cta.title}
             </h2>
             <p class="text-xl text-gray-400 mb-10 max-w-xl mx-auto">
-              {t().cta.subtitle}
+              {text.cta.subtitle}
             </p>
             <div class="flex flex-wrap justify-center gap-4">
               <Button href="/services" class="!bg-primary-500 hover:!bg-primary-600">
-                {t().cta.primaryBtn}
+                {text.cta.primaryBtn}
                 <svg class="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
               </Button>
               <Button href="/contact" variant="outline" class="!border-gray-700 !text-white hover:!bg-gray-800">
-                {t().cta.secondaryBtn}
+                {text.cta.secondaryBtn}
               </Button>
             </div>
           </div>

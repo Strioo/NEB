@@ -1,21 +1,22 @@
-import { Component, createSignal, Show } from 'solid-js';
+import { Component, createSignal, Show, For } from 'solid-js';
 import { Container, Button } from '../components';
-import { useI18n } from '../i18n';
+import { text } from '../constants/text';
+import { API_ENDPOINTS, logger } from '../config/api.config';
+import { ApiError } from '../utils/http';
+
+interface HeaderData {
+  name: string;
+  value: string;
+}
 
 interface UploadResponse {
   code: number;
   status: string;
   message: string;
-  data?: {
-    file_name: string;
-    start_url: string;
-    config_key_hash?: string;
-  };
+  data?: HeaderData[];
 }
 
 const Upload: Component = () => {
-  const { t } = useI18n();
-  
   const [redeemCode, setRedeemCode] = createSignal('');
   const [fileName, setFileName] = createSignal('');
   const [selectedFile, setSelectedFile] = createSignal<File | null>(null);
@@ -29,9 +30,6 @@ const Upload: Component = () => {
     fileName: '',
     file: '',
   });
-
-  // API Base URL - adjust based on your environment
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   /**
    * Simple XOR encryption for web token
@@ -59,7 +57,7 @@ const Upload: Component = () => {
       ciphertext += String.fromCharCode(encryptedCharCode);
     }
 
-    const keyHash = btoa(Array.from(new TextEncoder().encode(key)).reduce((acc, byte) => acc + byte.toString(), ''));
+    const keyHash = btoa(Array.from(new TextEncoder().encode(key)).reduce((acc, byte) => acc + byte, ''));
     return btoa(salt + ':' + keyHash.substring(0, 12) + ':' + ciphertext);
   };
 
@@ -71,17 +69,17 @@ const Upload: Component = () => {
     };
 
     if (!redeemCode().trim()) {
-      newErrors.redeemCode = t().upload.redeemCodeError;
+      newErrors.redeemCode = text.upload.redeemCodeError;
     }
 
     if (!fileName().trim()) {
-      newErrors.fileName = t().upload.fileNameError;
+      newErrors.fileName = text.upload.fileNameError;
     }
 
     if (!selectedFile()) {
-      newErrors.file = t().upload.fileError;
+      newErrors.file = text.upload.fileError;
     } else if (!selectedFile()?.name.endsWith('.seb')) {
-      newErrors.file = t().upload.fileTypeError;
+      newErrors.file = text.upload.fileTypeError;
     }
 
     setErrors(newErrors);
@@ -94,7 +92,7 @@ const Upload: Component = () => {
         setSelectedFile(file);
         setErrors(prev => ({ ...prev, file: '' }));
       } else {
-        setErrors(prev => ({ ...prev, file: t().upload.fileTypeError }));
+        setErrors(prev => ({ ...prev, file: text.upload.fileTypeError }));
       }
     }
   };
@@ -131,7 +129,7 @@ const Upload: Component = () => {
       formData.append('file_name', fileName());
       formData.append('redeem_code', redeemCode());
 
-      const response = await fetch(`${API_BASE_URL}/service/safe-exam-bypasser`, {
+      const response = await fetch(`${API_ENDPOINTS.BASE_URL}/service/safe-exam-bypasser`, {
         method: 'POST',
         headers: {
           'x-web-token': generateWebToken(),
@@ -147,26 +145,98 @@ const Upload: Component = () => {
         setError(result.message || 'An error occurred');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error occurred');
+      logger.error('Upload error:', err);
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Network error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCopyUrl = async () => {
-    if (success()?.start_url) {
-      try {
-        await navigator.clipboard.writeText(success()!.start_url);
-      } catch {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = success()!.start_url;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+  /**
+   * Get a specific header value from success data
+   */
+  const getHeaderValue = (name: string): string => {
+    const data = success();
+    if (!data) return '';
+    const header = data.find(h => h.name.toLowerCase() === name.toLowerCase());
+    return header?.value || '';
+  };
+
+  /**
+   * Copy text to clipboard
+   */
+  const handleCopyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
     }
+  };
+
+  /**
+   * Download result as JSON file with ModHeader format
+   */
+  const handleDownloadJson = () => {
+    const data = success();
+    if (!data) return;
+
+    const formattedJsonData: {
+      shortTitle: string;
+      title: string;
+      version: number;
+      headers: Array<{
+        enabled: boolean;
+        name: string;
+        value: string;
+        appendMode?: boolean;
+      }>;
+    } = {
+      shortTitle: "",
+      title: "",
+      version: 2,
+      headers: []
+    };
+
+    let downloadFileName = "result";
+
+    data.forEach((item) => {
+      const name = item.name.toLowerCase();
+
+      if (name === 'file-name') {
+        downloadFileName = item.value;
+        formattedJsonData.title = item.value;
+        formattedJsonData.shortTitle = item.value.charAt(0).toUpperCase();
+      } else {
+        formattedJsonData.headers.push({
+          enabled: false,
+          name: item.name,
+          value: item.value,
+          ...(name !== 'user-agent' && { appendMode: false })
+        });
+      }
+    });
+
+    const blob = new Blob([JSON.stringify(formattedJsonData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFileName + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleReset = () => {
@@ -185,57 +255,67 @@ const Upload: Component = () => {
           {/* Header */}
           <div class="text-center mb-10">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-              {t().upload.title}
+              {text.upload.title}
             </h1>
             <div class="w-16 h-1 bg-primary-500 mx-auto rounded-full mb-4" />
             <p class="text-gray-500">
-              {t().upload.subtitle}
+              {text.upload.subtitle}
             </p>
           </div>
 
           {/* Success State */}
           <Show when={success()}>
-            <div class="card-base p-8 text-center">
-              <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 class="text-2xl font-bold text-gray-900 mb-2">{t().upload.successTitle}</h2>
-              <p class="text-gray-500 mb-6">{t().upload.successMessage}</p>
-              
-              {/* URL Display */}
-              <div class="bg-gray-50 rounded-xl p-4 mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2 text-left">Start URL</label>
-                <div class="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={success()?.start_url || ''}
-                    readonly
-                    class="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 text-sm"
-                  />
-                  <button
-                    onClick={handleCopyUrl}
-                    class="px-4 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-                  >
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </button>
+            <div class="card-base p-8">
+              {/* Success Header */}
+              <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">{text.upload.successTitle}</h2>
+                <p class="text-gray-500">{text.upload.successMessage}</p>
               </div>
 
-              {/* File Name Display */}
-              <Show when={success()?.file_name}>
-                <div class="bg-gray-50 rounded-xl p-4 mb-6">
-                  <label class="block text-sm font-medium text-gray-700 mb-2 text-left">File Name</label>
-                  <p class="text-gray-900 text-left">{success()?.file_name}</p>
-                </div>
-              </Show>
+              {/* Results Display */}
+              <div class="space-y-3 mb-6">
+                <For each={success()}>
+                  {(header) => (
+                    <div class="bg-gray-50 rounded-xl p-4">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                          <label class="block text-xs font-semibold text-primary-600 uppercase tracking-wider mb-1">
+                            {header.name}
+                          </label>
+                          <p class="text-gray-900 text-sm break-all">{header.value}</p>
+                        </div>
+                        <button
+                          onClick={() => handleCopyToClipboard(header.value)}
+                          class="flex-shrink-0 p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </For>
+              </div>
 
-              <Button onClick={handleReset} variant="outline" class="w-full">
-                {t().upload.backBtn}
-              </Button>
+              {/* Action Buttons */}
+              <div class="space-y-3">
+                <Button onClick={handleDownloadJson} variant="accent" class="w-full !py-4">
+                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  {text.upload.downloadBtn || 'Download JSON for ModHeader'}
+                </Button>
+                <Button onClick={handleReset} variant="outline" class="w-full">
+                  {text.upload.backBtn}
+                </Button>
+              </div>
             </div>
           </Show>
 
@@ -257,7 +337,7 @@ const Upload: Component = () => {
               {/* Redeem Code Input */}
               <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  {t().upload.redeemCodeLabel}
+                  {text.upload.redeemCodeLabel}
                 </label>
                 <input
                   type="text"
@@ -266,7 +346,7 @@ const Upload: Component = () => {
                     setRedeemCode(e.currentTarget.value);
                     setErrors(prev => ({ ...prev, redeemCode: '' }));
                   }}
-                  placeholder={t().upload.redeemCodePlaceholder}
+                  placeholder={text.upload.redeemCodePlaceholder}
                   class={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors ${
                     errors().redeemCode ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
                   }`}
@@ -279,7 +359,7 @@ const Upload: Component = () => {
               {/* File Name Input */}
               <div class="mb-5">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  {t().upload.fileNameLabel}
+                  {text.upload.fileNameLabel}
                 </label>
                 <input
                   type="text"
@@ -288,7 +368,7 @@ const Upload: Component = () => {
                     setFileName(e.currentTarget.value);
                     setErrors(prev => ({ ...prev, fileName: '' }));
                   }}
-                  placeholder={t().upload.fileNamePlaceholder}
+                  placeholder={text.upload.fileNamePlaceholder}
                   class={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors ${
                     errors().fileName ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
                   }`}
@@ -301,7 +381,7 @@ const Upload: Component = () => {
               {/* File Upload Area */}
               <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  {t().upload.fileLabel}
+                  {text.upload.fileLabel}
                 </label>
                 <div
                   onDrop={handleDrop}
@@ -330,15 +410,15 @@ const Upload: Component = () => {
                         </svg>
                       </div>
                       <div>
-                        <p class="text-gray-700 font-medium">{t().upload.dragDropText}</p>
-                        <p class="text-gray-500 text-sm mt-1">{t().upload.orText}</p>
+                        <p class="text-gray-700 font-medium">{text.upload.dragDropText}</p>
+                        <p class="text-gray-500 text-sm mt-1">{text.upload.orText}</p>
                       </div>
                       <span class="inline-block px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700">
-                        {t().upload.chooseFile}
+                        {text.upload.chooseFile}
                       </span>
                       <div class="text-xs text-gray-400 space-y-1">
-                        <p>{t().upload.supportedFormat}</p>
-                        <p>{t().upload.maxFileSize}</p>
+                        <p>{text.upload.supportedFormat}</p>
+                        <p>{text.upload.maxFileSize}</p>
                       </div>
                     </div>
                   </Show>
@@ -388,14 +468,14 @@ const Upload: Component = () => {
                     <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    {t().upload.submitBtn}
+                    {text.upload.submitBtn}
                   </>
                 }>
                   <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  {t().upload.submitting}
+                  {text.upload.submitting}
                 </Show>
               </Button>
             </form>

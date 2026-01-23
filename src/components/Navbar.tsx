@@ -2,19 +2,17 @@ import { Component, createSignal, Show } from 'solid-js';
 import { A, useLocation } from '@solidjs/router';
 import Container from './Container';
 import Button from './Button';
-import LanguageDropdown from './LanguageDropdown';
-import { useI18n } from '../i18n';
+import { text } from '../constants/text';
 
 const Navbar: Component = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = createSignal(false);
   const location = useLocation();
-  const { t } = useI18n();
 
   const navLinks = () => [
-    { href: '/', label: t().nav.home },
-    { href: '/services', label: t().nav.services },
-    { href: '/tutorial', label: t().nav.tutorial },
-    { href: '/contact', label: t().nav.contact },
+    { href: '/', label: text.nav.home },
+    { href: '/services', label: text.nav.services },
+    { href: '/tutorial', label: text.nav.tutorial },
+    { href: '/contact', label: text.nav.contact },
   ];
 
   const isActive = (href: string) => {
@@ -49,16 +47,13 @@ const Navbar: Component = () => {
             ))}
           </div>
 
-          {/* Desktop CTA + Language Switcher */}
+          {/* Desktop CTA */}
           <div class="hidden md:flex items-center gap-3">
-            {/* Language Dropdown */}
-            <LanguageDropdown />
-            
             <A href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-              {t().nav.login}
+              {text.nav.login}
             </A>
             <Button href="/services" variant="accent" class="!py-2 !px-4 text-sm">
-              {t().nav.startFree}
+              {text.nav.startFree}
             </Button>
           </div>
 
@@ -103,15 +98,11 @@ const Navbar: Component = () => {
                 </A>
               ))}
               <div class="pt-4 px-4 flex flex-col gap-2 border-t border-gray-100">
-                {/* Mobile Language Dropdown */}
-                <div class="mb-2">
-                  <LanguageDropdown />
-                </div>
                 <A href="#" class="text-sm font-medium text-gray-600 hover:text-gray-900 py-2 text-center">
-                  {t().nav.login}
+                  {text.nav.login}
                 </A>
                 <Button href="/services" variant="accent" class="w-full">
-                  {t().nav.startFree}
+                  {text.nav.startFree}
                 </Button>
               </div>
             </div>
